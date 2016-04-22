@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Github Get
- * Plugin URI: https://github.com/yoander/wp-githubget
+ * Plugin URI: https://github.com/yoander/githubget
  * Description: This is simple wordpress plugin for embed code from github
  * Version: 0.1.0
  * Author: libreman
