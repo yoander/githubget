@@ -31,5 +31,5 @@ If you not specify a filename then the content of the first one will be get it.
 Note: repo attribute is mandatory
 
 To find the FilePath browse your repo from GitHub find the file and use Copy path GitHub function, you
-shouldi not paste the Path in Wordpress Visual Editor due will copy the full path including GitHub Url I
+should not paste the Path in Wordpress Visual Editor due will copy the full path including GitHub Url I
 recommend you to paste it in Text Editor.
