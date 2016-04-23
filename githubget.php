@@ -3,7 +3,7 @@
  * Plugin Name: Github Get
  * Plugin URI: https://github.com/yoander/githubget
  * Description: This is simple wordpress plugin for embed code from github
- * Version: 0.1.0
+ * Version: 0.1.1
  * Author: libreman
  * Author URI: https://www.librebyte.net/
  * License: GPLv3
