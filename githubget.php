@@ -3,7 +3,7 @@
 Plugin Name:       GitHub Get
 Plugin URI:        https://github.com/yoander/githubget
 Description:       A plugin to fetch content from GitHub. GitHub Get allows to get gists or file content from github using shortcode syntax.
-Version:           0.1.1
+Version:           0.1.2
 Author:            Yoander Valdés Rodríguez (libreman)
 License:           GNU General Public License v3
 License URI:       http://www.gnu.org/licenses/gpl-3.0.html
