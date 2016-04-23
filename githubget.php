@@ -189,7 +189,7 @@ function githubget_func( $atts, $content = '' ) {
             // For file in a repo
             if ($args['repo']) {
                 if (isset($github_data['content'])) {
-                    return base64_decode(htmlspecialchars($github_data['content']));
+                    return htmlspecialchars(base64_decode($github_data['content']));
                 }
                 return $content;
             }
