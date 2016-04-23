@@ -108,25 +108,6 @@ function githubget_on_update_complete($plugin, $data) {
 add_action('upgrader_process_complete', 'githubget_on_update_complete', 10, 2);
 
 /**
- * Helper function to get json decode error
- */
-
-function get_json_error($error_type = JSON_ERROR_NONE) {
-    return [
-        JSON_ERROR_NONE             => 'No error has occurred',
-        JSON_ERROR_DEPTH            => 'The maximum stack depth has been exceeded',
-        JSON_ERROR_STATE_MISMATCH   => 'Invalid or malformed JSON',
-        JSON_ERROR_CTRL_CHAR        => 'Control character error, possibly incorrectly encoded',
-        JSON_ERROR_SYNTAX           => 'The maximum stack depth has been exceeded',
-        JSON_ERROR_UTF8             => 'Malformed UTF-8 characters, possibly incorrectly encoded', // PHP 5.3.3
-        JSON_ERROR_RECURSION        => 'One or more recursive references in the value to be encoded', // PHP 5.3.3
-        JSON_ERROR_INF_OR_NAN       => 'One or more NAN or INF values in the value to be encoded ',// PHP 5.3.3
-        JSON_ERROR_UNSUPPORTED_TYPE => 'A value of a type that cannot be encoded was given', // PHP 5.3.3
-        ][$error_type];
-}
-
-
-/**
  * Add shortcode function
  *
  */
@@ -230,7 +211,7 @@ function githubget_settings_page() {
         update_option('githubget_option', $upload_options);
         echo '<p class="info">' . __('All configurations successfully saved...', 'githubget_option') . '</p>';
     }
-
+}
     ?>
 
     <!-- html code of settings page -->
