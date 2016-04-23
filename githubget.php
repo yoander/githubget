@@ -185,7 +185,10 @@ function githubget_func( $atts, $content = '' ) {
         if (JSON_ERROR_NONE == json_last_error()) {
             // For file in a repo
             if ($args['repo']) {
-                return base64_decode(htmlspecialchars($github_data['content']));
+                if (isset($github_data['content'])) {
+                    return base64_decode(htmlspecialchars($github_data['content']));
+                }
+                return $content;
             }
 
             // For file in a Gists
@@ -198,7 +201,8 @@ function githubget_func( $atts, $content = '' ) {
 
                 return htmlspecialchars($github_data['files'][$filename]['content']);
             }
-            return 'No files found in: ' . $content;
+
+            return $content;
         } else {
             return json_last_error_msg();
         }
