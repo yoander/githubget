@@ -1,6 +1,6 @@
 ##  GitHub Get: a plugin to fetch content from GitHub.
 
-GitHub Get is a WordPress plugin for fetch content from GitHub. GitHub Get use GitHub personal token and basic authentication to access the GitHub API 
+GitHub Get is a WordPress plugin for fetching content from GitHub. GitHub Get use GitHub personal token and basic authentication to access the GitHub API 
 
 ## How to use it
 
