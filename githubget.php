@@ -211,8 +211,7 @@ function githubget_settings_page() {
         update_option('githubget_option', $upload_options);
         echo '<p class="info">' . __('All configurations successfully saved...', 'githubget_option') . '</p>';
     }
-}
-    ?>
+?>
 
     <!-- html code of settings page -->
 
