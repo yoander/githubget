@@ -148,21 +148,17 @@ function githubget_func( $atts, $content = '' ) {
         $resource =  GITHUBGET_API . "/gists/$content";
     }
 
-    //set URL and other appropriate options
-    curl_setopt($ch, CURLOPT_URL, $resource);
-    curl_setopt($ch, CURLOPT_HEADER, 0);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 (FM Scene 4.6.1)',
-        'Authorization: token ' . GITHUBGET_TOKEN
-        ]
+    $reqargs = array(
+        'headers' => array(
+            'Authorization' => 'token ' . GITHUBGET_TOKEN
+        )
     );
 
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    //
+    $response = wp_remote_get( $resource, $reqargs );
+
     // grab URL and pass it to the browser
-    if ($content = curl_exec($ch)) {
+    if ($content = wp_remote_retrieve_body( $response )) {
         // close cURL resource, and free up system resources
-        curl_close($ch);
 
         $github_data = json_decode($content, true);
 
