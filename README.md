@@ -36,6 +36,6 @@ recommend you to paste it in Text Editor.
 
 ## TODO
 
-- Caching the response in order the plugin can be used on very heavy load sites
+- Caching the response so be used on very heavy load sites
 - Add shortcode attribute (accountname) in order to fetch content from any public repository
-- 
+- Multiuser and Multisite.
