@@ -1,6 +1,6 @@
 ##  GitHub Get: a plugin to fetch content from GitHub.
 
-GitHub Get is a WordPress plugin for fetching content from GitHub. GitHub Get use GitHub personal token and basic authentication to access the GitHub API 
+GitHub Get is a WordPress plugin for fetching content from GitHub. GitHub Get use GitHub personal token and basic authentication to access the GitHub API
 
 ## How to use it
 
@@ -33,3 +33,9 @@ Note: repo attribute is mandatory
 To find the FilePath browse your repo from GitHub find the file and use Copy path GitHub function, you
 should not paste the Path in Wordpress Visual Editor due will copy the full path including GitHub Url I
 recommend you to paste it in Text Editor.
+
+## TODO
+
+- Caching the response in order the plugin can be used on very heavy load sites
+- Add shortcode attribute (accountname) in order to fetch content from any public repository
+- 
