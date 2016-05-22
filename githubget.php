@@ -154,43 +154,47 @@ function githubget_func( $atts, $content = '' ) {
     );
 
     $response = wp_remote_get( $resource, $reqargs );
-
     // Grab URL and pass it to the browser
-    if ($content = wp_remote_retrieve_body( $response )) {
+    if ($github_data = wp_remote_retrieve_body( $response )) {
 
         // Get body response
-        $github_data = json_decode($content, true);
-
+        $github_data = json_decode($github_data, true);
         // No error decoding json
         if (JSON_ERROR_NONE == json_last_error()) {
             // For file in a repo
             if ($is_repo) {
                 if (isset($github_data['content'])) {
-                    return htmlspecialchars(base64_decode($github_data['content']));
+                    $result = htmlspecialchars(base64_decode($github_data['content']));
+                } else {
+                    $result = 'Invalid repo file: %s %s, <a href="https://github.com/%s">Repos</a>';
+                    $result = sprintf($result, $content, '(' . $github_data['message'] . ')', GITHUBGET_USER);
                 }
-                return $content;
-            }
+            } elseif (!empty($github_data['files'])) { // For file in a Gists
+                if ($filename = $args['filename']) {
+                     // Remove simple/double quote from filename attribute
+                    $filename = str_replace(['&quot;', '&#34;', '"', '&apos;', '&#039;', "'"], '', $args['filename']);
 
-            // For file in a Gists
-            if (!empty($github_data['files'])) {
-
-                if (empty($filename)) {
-                     return htmlspecialchars(reset($github_data['files'])['content']);
+                    if (isset($github_data['files'][$filename])) {
+                        $result = htmlspecialchars($github_data['files'][$filename]['content']);
+                    } else {
+                        $result = 'Invalid file name: %s, <a href="https://gist.github.com/%s/%s">Gist</a>';
+                        $result = sprintf($result, $filename, GITHUBGET_USER, $content);
+                    }
+                } else{
+                    $result = htmlspecialchars(reset($github_data['files'])['content']);
                 }
-
-                // Remove simple/double quote from filename attribute
-                $filename = str_replace(['&quot;', '&#34;', '"', '&apos;', '&#039;', "'"], '', $args['filename']);
-
-                return htmlspecialchars($github_data['files'][$filename]['content']);
+            } else {
+                $result = 'Invalid Gist: %s %s, <a href="https://gist.github.com/%s">Gists</a>';
+                $result = sprintf($result, $content, '('. $github_data['message'] . ')', GITHUBGET_USER);
             }
-
-            return $content;
         } else {
-            return json_last_error_msg();
+            $result = json_last_error_msg();
         }
+    } else {
+        $result = 'Content can not be get from ' . $resource;
     }
 
-    return 'Content can not be get from ' . $resource;
+    return $result;
 }
 
 add_shortcode( 'githubget', 'githubget_func' );
