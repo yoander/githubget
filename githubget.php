@@ -119,8 +119,8 @@ function githubget_func( $atts, $content = '' ) {
     $atts =  isset($atts) && is_array($atts) ? $atts : array();
 
     $args = shortcode_atts( array(
-        'filename' => '',
-        'repo' => 0,
+        'filename'  => '',
+        'repo'      => false,
     ), $atts);
 
 
@@ -131,8 +131,10 @@ function githubget_func( $atts, $content = '' ) {
     // create a new cURL resource
     $ch = curl_init();
 
-    if ($args['repo']) {
-        if (!defined('GITHUBGET_USER')) {
+    $is_repo = strtolower($args['repo']);
+    $is_repo = '1' == $is_repo || 'true' == $is_repo ? true: false;
+    if ($is_repo) {
+        if (!defined('GITHUBGET_USER')) {;
             define('GITHUBGET_USER',  githubget_get_option('github_user'));
         }
 
@@ -156,15 +158,16 @@ function githubget_func( $atts, $content = '' ) {
 
     $response = wp_remote_get( $resource, $reqargs );
 
-    // grab URL and pass it to the browser
+    // Grab URL and pass it to the browser
     if ($content = wp_remote_retrieve_body( $response )) {
-        // close cURL resource, and free up system resources
 
+        // Get body response
         $github_data = json_decode($content, true);
 
+        // No error decoding json
         if (JSON_ERROR_NONE == json_last_error()) {
             // For file in a repo
-            if ($args['repo']) {
+            if ($is_repo) {
                 if (isset($github_data['content'])) {
                     return htmlspecialchars(base64_decode($github_data['content']));
                 }
@@ -173,9 +176,11 @@ function githubget_func( $atts, $content = '' ) {
 
             // For file in a Gists
             if (!empty($github_data['files'])) {
+
                 if (empty($filename)) {
                      return htmlspecialchars(reset($github_data['files'])['content']);
                 }
+
                 // Remove simple/double quote from filename attribute
                 $filename = str_replace(['&quot;', '&#34;', '"', '&apos;', '&#039;', "'"], '', $args['filename']);
 
@@ -192,6 +197,7 @@ function githubget_func( $atts, $content = '' ) {
 }
 
 add_shortcode( 'githubget', 'githubget_func' );
+add_shortcode( 'ghget', 'githubget_func' );
 
 /**
  * Settings Page
