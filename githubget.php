@@ -128,9 +128,6 @@ function githubget_func( $atts, $content = '' ) {
         define('GITHUBGET_TOKEN',  githubget_get_option('github_token'));
     }
 
-    // create a new cURL resource
-    $ch = curl_init();
-
     $is_repo = strtolower($args['repo']);
     $is_repo = '1' == $is_repo || 'true' == $is_repo ? true: false;
     if ($is_repo) {
