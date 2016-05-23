@@ -119,8 +119,10 @@ function githubget_func( $atts, $content = '' ) {
     $atts =  isset($atts) && is_array($atts) ? $atts : array();
 
     $args = shortcode_atts( array(
-        'filename'  => '',
-        'repo'      => false,
+        'filename'    => '',
+        'repo'        => false,
+        'ribbon'      => false,
+        'ribbontitle' => '',
     ), $atts);
 
 
@@ -161,6 +163,8 @@ function githubget_func( $atts, $content = '' ) {
         $github_data = json_decode($github_data, true);
         // No error decoding json
         if (JSON_ERROR_NONE == json_last_error()) {
+            $has_ribbon =  '1' == $args['ribbon'] || 'true' == $args['ribbon'] ? true: false;
+
             // For file in a repo
             if ($is_repo) {
                 if (isset($github_data['content'])) {
@@ -168,6 +172,7 @@ function githubget_func( $atts, $content = '' ) {
                 } else {
                     $result = 'Invalid repo file: %s %s, <a href="https://github.com/%s">Repos</a>';
                     $result = sprintf($result, $content, '(' . $github_data['message'] . ')', GITHUBGET_USER);
+                    $has_ribbon = false;
                 }
             } elseif (!empty($github_data['files'])) { // For file in a Gists
                 if ($filename = $args['filename']) {
@@ -179,6 +184,7 @@ function githubget_func( $atts, $content = '' ) {
                     } else {
                         $result = 'Invalid file name: %s, <a href="https://gist.github.com/%s/%s">Gist</a>';
                         $result = sprintf($result, $filename, GITHUBGET_USER, $content);
+                        $has_ribbon = false;
                     }
                 } else{
                     $result = htmlspecialchars(reset($github_data['files'])['content']);
@@ -186,12 +192,24 @@ function githubget_func( $atts, $content = '' ) {
             } else {
                 $result = 'Invalid Gist: %s %s, <a href="https://gist.github.com/%s">Gists</a>';
                 $result = sprintf($result, $content, '('. $github_data['message'] . ')', GITHUBGET_USER);
+                $has_ribbon = false;
             }
         } else {
             $result = json_last_error_msg();
+            $has_ribbon = false;
         }
     } else {
         $result = 'Content can not be get from ' . $resource;
+        $has_ribbon = false;
+    }
+
+    if ($has_ribbon) {
+        $result = sprintf(
+            '<a target="_blank" class="ribbon" href="%s">[%s %s]</a>%s',
+            $github_data['html_url'],
+            '&#955;',
+            empty($args['ribbontitle']) ? 'Fork me on Github' : $args['ribbontitle'],
+            "\n") . $result;
     }
 
     return $result;
