@@ -122,9 +122,13 @@ function githubget_func( $atts, $content = '' ) {
         'filename'    => '',
         'repo'        => false,
         'ribbon'      => false,
-        'ribbontitle' => '',
+        'container' => '',
     ), $atts);
 
+    //  var_dump($args['container']); return;
+    if (!defined('GITHUBGET_USER')) {;
+        define('GITHUBGET_USER',  githubget_get_option('github_user'));
+    }
 
     if (!defined('GITHUBGET_TOKEN')) {
         define('GITHUBGET_TOKEN',  githubget_get_option('github_token'));
@@ -133,10 +137,6 @@ function githubget_func( $atts, $content = '' ) {
     $is_repo = strtolower($args['repo']);
     $is_repo = '1' == $is_repo || 'true' == $is_repo ? true: false;
     if ($is_repo) {
-        if (!defined('GITHUBGET_USER')) {;
-            define('GITHUBGET_USER',  githubget_get_option('github_user'));
-        }
-
         $resource =  GITHUBGET_API . '/repos/' . GITHUBGET_USER;
         $pathparts = explode('/', $content);
 
@@ -201,6 +201,33 @@ function githubget_func( $atts, $content = '' ) {
     } else {
         $result = 'Content can not be get from ' . $resource;
         $has_ribbon = false;
+    }
+
+    $container = [];
+    if (!empty($args['container'])) {
+        $tags = explode('.', $args['container']);
+        foreach ($tags as $tag) {
+            $classes = '';
+            $style = '';
+            if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(\w+-?)+\s*:\s*(\w+-?)+;?)+)\s*\}/", $tag, $matches, PREG_SET_ORDER)) {
+                $searches = [
+                    $matches[0][0],
+                    isset($matches[1][0]) ? $matches[1][0] : ''
+                ];
+                $tag = str_replace($searches, '', $tag);
+                $classes = ' class="' . $matches[0][1] . '"';
+                $style = isset($matches[1][3]) ? ' style="' . $matches[1][3] . '"' : '';
+
+            }
+            $container['start_tags'][] = "<$tag$classes$style>";
+            $container['end_tags'][] = "</$tag>";
+        }
+
+        $result = implode('', [
+            implode('', $container['start_tags']),
+            $result,
+            implode('', array_reverse($container['end_tags']))
+        ]);
     }
 
     if ($has_ribbon) {
