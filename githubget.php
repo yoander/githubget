@@ -13,7 +13,7 @@ GitHub Plugin URI: https://github.com/yoander/githubget
 GitHub Branch:     master
 */
 
-define('PLUGIN_DIR', plugins_url() . '/' . dirname(plugin_basename(__FILE__)));
+define('GITHUBGET_URL', plugins_url() . '/' . dirname(plugin_basename(__FILE__)));
 define('GITHUBGET_API', 'https://api.github.com');
 
 /**
@@ -75,11 +75,11 @@ add_action('init', 'githubget_load_textdomain');
 /**
  * Add Settings Page to Admin Menu
  */
-function githubge_admin_page() {
+function githubget_admin_page() {
     if (function_exists('add_submenu_page'))
         add_options_page(__('Gitub Get Settings'), __('Gitub Get '), 'manage_options', 'githubget', 'githubget_settings_page');
 }
-add_action('admin_menu', 'githubge_admin_page');
+add_action('admin_menu', 'githubget_admin_page');
 
 
 /**
@@ -106,6 +106,13 @@ function githubget_on_update_complete($plugin, $data) {
     }
 }
 add_action('upgrader_process_complete', 'githubget_on_update_complete', 10, 2);
+
+function githubget_include() {
+    wp_enqueue_style( 'githubget_style', GITHUBGET_URL . '/css/style.css');
+
+}
+add_action('wp_head', 'githubget_include');
+
 
 /**
  * Add shortcode function
@@ -232,9 +239,9 @@ function githubget_func( $atts, $content = '' ) {
 
     if ($has_ribbon) {
         $result = sprintf(
-            '<a target="_blank" class="ribbon" href="%s">[%s %s]</a>%s',
+            '<a target="_blank" class="ghget-ribbon" href="%s">%s %s</a>%s',
             $github_data['html_url'],
-            '&#955;',
+            '<span class="icon-code-fork"></span>',
             empty($args['ribbontitle']) ? 'Fork me on Github' : $args['ribbontitle'],
             "\n") . $result;
     }
