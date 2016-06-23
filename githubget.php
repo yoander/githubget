@@ -216,7 +216,7 @@ function githubget_func( $atts, $content = '' ) {
         foreach ($tags as $tag) {
             $classes = '';
             $style = '';
-            if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(\w+-?)+\s*:\s*(\w+-?)+;?)+)\s*\}/", $tag, $matches, PREG_SET_ORDER)) {
+            if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(\w+-?\s*)+\s*:\s*(\w+-?\s*)+;?)+)\s*\}/", $tag, $matches, PREG_SET_ORDER)) {
                 $searches = [
                     $matches[0][0],
                     isset($matches[1][0]) ? $matches[1][0] : ''
@@ -226,6 +226,7 @@ function githubget_func( $atts, $content = '' ) {
                 $style = isset($matches[1][3]) ? ' style="' . $matches[1][3] . '"' : '';
 
             }
+
             $container['start_tags'][] = "<$tag$classes$style>";
             $container['end_tags'][] = "</$tag>";
         }
