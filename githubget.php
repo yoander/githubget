@@ -216,15 +216,21 @@ function githubget_func( $atts, $content = '' ) {
         foreach ($tags as $tag) {
             $classes = '';
             $style = '';
-            if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(\w+-?\s*)+\s*:\s*(\w+-?\s*)+;?)+)\s*\}/", $tag, $matches, PREG_SET_ORDER)) {
-                $searches = [
-                    $matches[0][0],
-                    isset($matches[1][0]) ? $matches[1][0] : ''
-                ];
-                $tag = str_replace($searches, '', $tag);
-                $classes = ' class="' . $matches[0][1] . '"';
-                $style = isset($matches[1][3]) ? ' style="' . $matches[1][3] . '"' : '';
+            if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(\w+-?\s*)+\s*:\s*(\w+-?\s*)+;?)+)\s*\}/", $tag, $matches)) {
+                $tag = str_replace($matches[0], '', $tag);
+                if (!empty($matches[1][0])) {
+                    $classes = sprintf(' class="%s"', $matches[1][0]);
+                } elseif (!empty($matches[1][1])) {
+                    $classes = sprintf(' class="%s"', $matches[1][1]);
+                } else {
+                    $classes = '';
+                }
 
+                if (!empty($matches[3][0])) {
+                    $style = sprintf(' style="%s"', $matches[3][0]);
+                } else {
+                    $style = '';
+                }
             }
 
             $container['start_tags'][] = "<$tag$classes$style>";
@@ -236,6 +242,8 @@ function githubget_func( $atts, $content = '' ) {
             $result,
             implode('', array_reverse($container['end_tags']))
         ]);
+
+        //var_dump($matches); return;
     }
 
     if ($has_ribbon) {
