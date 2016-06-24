@@ -128,7 +128,7 @@ function githubget_func( $atts, $content = '' ) {
     $args = shortcode_atts( array(
         'filename'    => '',
         'repo'        => false,
-        'ribbon'      => false,
+        'ribbon'      => true,
         'container' => '',
     ), $atts);
 
@@ -242,8 +242,6 @@ function githubget_func( $atts, $content = '' ) {
             $result,
             implode('', array_reverse($container['end_tags']))
         ]);
-
-        //var_dump($matches); return;
     }
 
     if ($has_ribbon) {
