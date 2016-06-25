@@ -3,7 +3,7 @@
 Plugin Name:       GitHub Get
 Plugin URI:        https://github.com/yoander/githubget
 Description:       GitHub Get is a WordPress plugin for fetching content from GitHub. GitHub Get use GitHub personal token and basic authentication to access the GitHub API.
-Version:           0.1.6
+Version:           0.1.7
 Author:            Yoander Valdés Rodríguez (libreman)
 License:           GNU General Public License v3
 License URI:       http://www.gnu.org/licenses/gpl-3.0.html
