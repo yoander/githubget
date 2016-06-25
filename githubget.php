@@ -132,19 +132,13 @@ function githubget_func( $atts, $content = '' ) {
         'container' => '',
     ), $atts);
 
-    //  var_dump($args['container']); return;
-    if (!defined('GITHUBGET_USER')) {;
-        define('GITHUBGET_USER',  githubget_get_option('github_user'));
-    }
-
-    if (!defined('GITHUBGET_TOKEN')) {
-        define('GITHUBGET_TOKEN',  githubget_get_option('github_token'));
-    }
+    $github_user = githubget_get_option('github_user');
+    $github_token = githubget_get_option('github_token');
 
     $is_repo = strtolower($args['repo']);
     $is_repo = '1' == $is_repo || 'true' == $is_repo ? true: false;
     if ($is_repo) {
-        $resource =  GITHUBGET_API . '/repos/' . GITHUBGET_USER;
+        $resource =  GITHUBGET_API . '/repos/' . $github_user;
         $pathparts = explode('/', $content);
 
         $reponame = array_shift($pathparts);
@@ -158,7 +152,7 @@ function githubget_func( $atts, $content = '' ) {
 
     $reqargs = array(
         'headers' => array(
-            'Authorization' => 'token ' . GITHUBGET_TOKEN
+            'Authorization' => 'token ' . $github_token
         )
     );
 
@@ -178,7 +172,7 @@ function githubget_func( $atts, $content = '' ) {
                     $result = htmlspecialchars(base64_decode($github_data['content']));
                 } else {
                     $result = 'Invalid repo file: %s %s, <a href="https://github.com/%s">Repos</a>';
-                    $result = sprintf($result, $content, '(' . $github_data['message'] . ')', GITHUBGET_USER);
+                    $result = sprintf($result, $content, '(' . $github_data['message'] . ')', $github_user);
                     $has_ribbon = false;
                 }
             } elseif (!empty($github_data['files'])) { // For file in a Gists
@@ -190,7 +184,7 @@ function githubget_func( $atts, $content = '' ) {
                         $result = htmlspecialchars($github_data['files'][$filename]['content']);
                     } else {
                         $result = 'Invalid file name: %s, <a href="https://gist.github.com/%s/%s">Gist</a>';
-                        $result = sprintf($result, $filename, GITHUBGET_USER, $content);
+                        $result = sprintf($result, $filename, $github_user, $content);
                         $has_ribbon = false;
                     }
                 } else{
@@ -198,7 +192,7 @@ function githubget_func( $atts, $content = '' ) {
                 }
             } else {
                 $result = 'Invalid Gist: %s %s, <a href="https://gist.github.com/%s">Gists</a>';
-                $result = sprintf($result, $content, '('. $github_data['message'] . ')', GITHUBGET_USER);
+                $result = sprintf($result, $content, '('. $github_data['message'] . ')', $github_user);
                 $has_ribbon = false;
             }
         } else {
