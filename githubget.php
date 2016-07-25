@@ -113,32 +113,17 @@ function githubget_include() {
 }
 add_action('wp_head', 'githubget_include');
 
-
 /**
- * Add shortcode function
+ * Build the API endpoint
  *
+ * @param  string  $user    API user
+ * @param  string  $content Content idenfier
+ * @param  boolean $is_repo If a repo or Gist
+ * @return string           Endpoint url
  */
-function githubget_func( $atts, $content = '' ) {
-    if (empty($content)) {
-        return '';
-    }
-
-    $atts =  isset($atts) && is_array($atts) ? $atts : array();
-
-    $args = shortcode_atts( array(
-        'filename'    => '',
-        'repo'        => false,
-        'ribbon'      => true,
-        'container' => '',
-    ), $atts);
-
-    $github_user = githubget_get_option('github_user');
-    $github_token = githubget_get_option('github_token');
-
-    $is_repo = strtolower($args['repo']);
-    $is_repo = '1' == $is_repo || 'true' == $is_repo ? true: false;
+function get_resource( $user, $content, $is_repo = false) {
     if ($is_repo) {
-        $resource =  GITHUBGET_API . '/repos/' . $github_user;
+        $resource =  GITHUBGET_API . '/repos/' . $user;
         $pathparts = explode('/', $content);
 
         $reponame = array_shift($pathparts);
@@ -150,101 +135,194 @@ function githubget_func( $atts, $content = '' ) {
         $resource =  GITHUBGET_API . "/gists/$content";
     }
 
-    $reqargs = array(
-        'headers' => array(
-            'Authorization' => 'token ' . $github_token
-        )
-    );
+    return $resource;
+}
 
-    $response = wp_remote_get( $resource, $reqargs );
-    // Grab URL and pass it to the browser
-    if ($github_data = wp_remote_retrieve_body( $response )) {
-
-        // Get body response
-        $github_data = json_decode($github_data, true);
-        // No error decoding json
-        if (JSON_ERROR_NONE == json_last_error()) {
-            $has_ribbon =  '1' == $args['ribbon'] || 'true' == $args['ribbon'] ? true: false;
-
-            // For file in a repo
-            if ($is_repo) {
-                if (isset($github_data['content'])) {
-                    $result = htmlspecialchars(base64_decode($github_data['content']));
+/**
+ * Decode de response
+ *
+ * @param  [type]  $body    [description]
+ * @param  boolean $is_repo [description]
+ * @return array           [description]
+ */
+function process_response_body( $body, $file_name = '', $is_repo = false ) {
+    // Convert JSON to array
+    $github_data = json_decode( $body, true );
+    // No error decoding JSON?
+    if (JSON_ERROR_NONE == json_last_error()) {
+        // For file in a repo
+        if ($is_repo) {
+            if (isset($github_data['content'])) {
+                $status = 'OK';
+                $result = htmlspecialchars( base64_decode( $github_data['content'] ) );
+            } else {
+                $status = 'ERR';
+                $result = 'Invalid repo file: ¿content? %s, <a href="https://github.com/¿user?">Repos</a>';
+                $result = sprintf($result, '(' . $github_data['message'] . ')');
+            }
+        } elseif (!empty($github_data['files'])) { // For file in a Gists
+            if ($file_name) {
+                 // Remove simple/double quote from filename attribute
+                $file_name = str_replace(['&quot;', '&#34;', '"', '&apos;', '&#039;', "'"], '', $file_name);
+                if (isset($github_data['files'][$file_name])) {
+                    $status = 'OK';
+                    $result = htmlspecialchars( $github_data['files'][$file_name]['content'] );
                 } else {
-                    $result = 'Invalid repo file: %s %s, <a href="https://github.com/%s">Repos</a>';
-                    $result = sprintf($result, $content, '(' . $github_data['message'] . ')', $github_user);
-                    $has_ribbon = false;
-                }
-            } elseif (!empty($github_data['files'])) { // For file in a Gists
-                if ($filename = $args['filename']) {
-                     // Remove simple/double quote from filename attribute
-                    $filename = str_replace(['&quot;', '&#34;', '"', '&apos;', '&#039;', "'"], '', $args['filename']);
-
-                    if (isset($github_data['files'][$filename])) {
-                        $result = htmlspecialchars($github_data['files'][$filename]['content']);
-                    } else {
-                        $result = 'Invalid file name: %s, <a href="https://gist.github.com/%s/%s">Gist</a>';
-                        $result = sprintf($result, $filename, $github_user, $content);
-                        $has_ribbon = false;
-                    }
-                } else{
-                    $result = htmlspecialchars(reset($github_data['files'])['content']);
+                    $status = 'ERR';
+                    $result = 'Invalid file name: %s, <a href="https://gist.github.com/¿user?/¿content?">Gist</a>';
+                    $result = sprintf($result, $file_name);
                 }
             } else {
-                $result = 'Invalid Gist: %s %s, <a href="https://gist.github.com/%s">Gists</a>';
-                $result = sprintf($result, $content, '('. $github_data['message'] . ')', $github_user);
-                $has_ribbon = false;
+                $status = 'OK';
+                $result = htmlspecialchars( reset( $github_data['files'] )['content'] );
             }
         } else {
-            $result = json_last_error_msg();
-            $has_ribbon = false;
+            $status = 'ERR';
+            $result = 'Invalid Gist: ¿content? %s, <a href="https://gist.github.com/¿user?">Gists</a>';
+            $result = sprintf($result, '('. $github_data['message'] . ')');
         }
     } else {
-        $result = 'Content can not be get from ' . $resource;
-        $has_ribbon = false;
+        $status = 'ERR';
+        $result = json_last_error_msg();
     }
 
-    $container = [];
-    if (!empty($args['container'])) {
-        $tags = explode('.', $args['container']);
-        foreach ($tags as $tag) {
-            $classes = '';
-            $style = '';
-            if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(\w+-?\s*)+\s*:\s*(\w+-?\s*)+;?)+)\s*\}/", $tag, $matches)) {
-                $tag = str_replace($matches[0], '', $tag);
-                if (!empty($matches[1][0])) {
-                    $classes = sprintf(' class="%s"', $matches[1][0]);
-                } elseif (!empty($matches[1][1])) {
-                    $classes = sprintf(' class="%s"', $matches[1][1]);
-                } else {
-                    $classes = '';
-                }
+    return array(
+        'html_url' => isset($github_data['html_url']) ? $github_data['html_url'] : '',
+        'status'   => $status,
+        'content'   => $result
+    );
+}
 
-                if (!empty($matches[3][0])) {
-                    $style = sprintf(' style="%s"', $matches[3][0]);
-                } else {
-                    $style = '';
-                }
+function make_the_container( $container ) {
+    $tags = explode('.', $container);
+    $container = [];
+    foreach ($tags as $tag) {
+        $classes = '';
+        $style = '';
+        if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(\w+-?\s*)+\s*:\s*(\w+-?\s*)+;?)+)\s*\}/", $tag, $matches)) {
+            $tag = str_replace($matches[0], '', $tag);
+            if (!empty($matches[1][0])) {
+                $classes = sprintf(' class="%s"', $matches[1][0]);
+            } elseif (!empty($matches[1][1])) {
+                $classes = sprintf(' class="%s"', $matches[1][1]);
+            } else {
+                $classes = '';
             }
 
-            $container['start_tags'][] = "<$tag$classes$style>";
-            $container['end_tags'][] = "</$tag>";
+            if (!empty($matches[3][0])) {
+                $style = sprintf(' style="%s"', $matches[3][0]);
+            } else {
+                $style = '';
+            }
         }
 
-        $result = implode('', [
-            implode('', $container['start_tags']),
-            $result,
-            implode('', array_reverse($container['end_tags']))
-        ]);
+        $container['start_tags'][] = "<$tag$classes$style>";
+        $container['end_tags'][] = "</$tag>";
+    }
+
+    return implode('',
+        array(
+            implode( '', $container['start_tags'] ),
+            '%s',
+            implode( '', array_reverse( $container['end_tags'] ) )
+        )
+    );
+}
+
+function make_the_ribbon( $url, $ribbon_title = '' ) {
+    return sprintf(
+        '<a target="_blank" class="ghget-ribbon" href="%s">%s %s</a>%s',
+        $url,
+        '<span class="icon-code-fork"></span>',
+        empty($ribbon_title) ? 'Fork me on Github' : $ribbon_title,
+        PHP_EOL
+    );
+}
+
+
+/**
+ * Add shortcode function
+ *
+ */
+function githubget_func( $atts, $content = '' ) {
+    if (empty($content)) {
+        return '';
+    }
+
+    $atts =  isset($atts) && is_array($atts) ? $atts : array();
+    $args = shortcode_atts( array(
+        'filename'     => '',
+        'repo'         => false,
+        'ribbon'       => true,
+        'ribbontitle'  => '',
+        'container'    => '',
+    ), $atts);
+
+    $github_user = githubget_get_option('github_user');
+    $is_repo = strtolower($args['repo']);
+    $is_repo = '1' == $is_repo || 'true' == $is_repo ? true: false;
+    $has_ribbon =  '1' == $args['ribbon'] || 'true' == $args['ribbon'] ? true: false;
+    $caches_the_content = false;
+
+    // Content has been cached?
+    $content_key = 'ghget_' . "{$github_user}_" . md5( md5( $args['filename'] ) . $content );
+
+    // Avoid to make multiple request for Gist with multiple files
+    $body_response_key = 'ghget_' . "{$github_user}_" . md5( $content );
+    if ($body = get_transient( $body_response_key )) {
+        $github_data = process_response_body( $body, $args['filename'], $is_repo );
+        $result = $github_data['content'] . '***********FROMDB************';
+        $has_ribbon = 'OK' == $github_data['status'] && $has_ribbon;
+        $caches_the_content = 'OK' == $github_data['status'];
+    } else {
+        $github_token = githubget_get_option('github_token');
+        $resource = get_resource( $github_user, $content, $is_repo );
+        $reqargs['headers']['Authorization'] = 'token ' . $github_token;
+
+        $github_data = get_transient( $content_key );
+        if ( !empty( $github_data ) ) {
+            $reqargs['headers']['If-Modified-Since'] = ' ' . gmdate('D, d M Y H:i:s T');
+        }
+
+        $response = wp_remote_get( $resource, $reqargs );
+        $http_code = wp_remote_retrieve_response_code( $response );
+
+        // Content no modified
+        if (304 == $http_code) {
+            $result =  $github_data['content'];
+            $has_ribbon = false;
+            $args['container'] = '';
+            // Grab URL and pass it to the browser
+        } elseif ($body = wp_remote_retrieve_body( $response )) {
+            $github_data = process_response_body( $body, $args['filename'], $is_repo );
+
+            $result = $github_data['content'];
+            if ('OK' == $github_data['status']) {
+                // Caches the full reponse, expires in 5 min this is useful to avoid to do the same
+                // request to GitHub API
+                set_transient( $body_response_key, $body, 300 );
+                $caches_the_content = true;
+            } else {
+                $has_ribbon = false;
+                $result = str_replace(array('¿content?', '¿user?'), array($content, $github_user), $result);
+            }
+        } else {
+            $result = 'Content can not be get from ' . $resource . '<br/>Response status: ' . $http_code;
+            $has_ribbon = false;
+        }
+    }
+
+    if (!empty($args['container'])) {
+        $result = sprintf( make_the_container( $args['container'] ), $result );
     }
 
     if ($has_ribbon) {
-        $result = sprintf(
-            '<a target="_blank" class="ghget-ribbon" href="%s">%s %s</a>%s',
-            $github_data['html_url'],
-            '<span class="icon-code-fork"></span>',
-            empty($args['ribbontitle']) ? 'Fork me on Github' : $args['ribbontitle'],
-            "\n") . $result;
+        $result = make_the_ribbon( $github_data['html_url'], $args['ribbontitle'] ) . $result;
+    }
+
+    if ($caches_the_content) {
+        // Cache only the content for specific file
+        set_transient( $content_key, array('html_url' => $github_data['html_url'], 'content' =>  $result) );
     }
 
     return $result;
