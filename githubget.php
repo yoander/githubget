@@ -256,9 +256,10 @@ function githubget_func( $atts, $content = '' ) {
         'ribbon'       => true,
         'ribbontitle'  => '',
         'container'    => '',
+        'account'      => '',
     ), $atts);
 
-    $github_user = githubget_get_option('github_user');
+    $github_user = empty($args['account']) ? githubget_get_option('github_user') : $args['account'];
     $is_repo = strtolower($args['repo']);
     $is_repo = '1' == $is_repo || 'true' == $is_repo ? true: false;
     $has_ribbon =  '1' == $args['ribbon'] || 'true' == $args['ribbon'] ? true: false;
@@ -299,7 +300,7 @@ function githubget_func( $atts, $content = '' ) {
             $result = $github_data['content'];
             if ('OK' == $github_data['status']) {
                 // Caches the full reponse, expires in 5 min this is useful to avoid to do the same
-                // request to GitHub API
+                // request to GitHub API for every file in gist with multiple file
                 set_transient( $body_response_key, $body, 300 );
                 $caches_the_content = true;
             } else {
