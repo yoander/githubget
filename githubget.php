@@ -262,7 +262,7 @@ function githubget_func( $atts, $content = '' ) {
     $github_user = empty($args['account']) ? githubget_get_option('github_user') : $args['account'];
     $is_repo = strtolower($args['repo']);
     $is_repo = '1' == $is_repo || 'true' == $is_repo ? true: false;
-    $has_ribbon =  '1' == $args['ribbon'] || 'true' == $args['ribbon'] ? true: false;
+    $has_ribbon = '1' == $args['ribbon'] || 'true' == $args['ribbon'] ? true: false;
     $caches_the_content = false;
 
     // Content has been cached?
@@ -353,18 +353,21 @@ function githubget_settings_page() {
     <div class="wrap">
       <form id="githubget" method="post" action="<?php echo $_SERVER['REQUEST_URI'];?>">
         <!-- text edit : additional css -->
-       <table>
-          <tr>
-            <td><label for="hljs_additional_css"><?php echo __('Github User', 'githubget'); ?></label></td>
-            <td><input type="text" name="github_user" id="github_user_id" value="<?php echo githubget_get_option('github_user') ?>" /></td>
-          </tr>
-          <tr>
-           <td><?php echo __('Github Token', 'githubget'); ?></label></td>
-           <td><input type="text" name="github_token" id="github_token_id" value="<?php echo githubget_get_option('github_token') ?>" /></td>
-          </tr>
-       </table>
-        <input type="hidden" name="cmd" value="githubget_save" />
-        <input type="submit" name="submit" value="<?php echo __('Save', 'githubget'); ?>" id="submit" />
+        <fieldset>
+           <legend style="font-size: 1.2em; font-weight:bold">GitHub authentication details</legend><br/>
+           <table>
+              <tr>
+                <td><label for="github_user"><?php echo __('Github User', 'githubget'); ?></label></td>
+                <td><input type="text" name="github_user" id="github_user_id" value="<?php echo githubget_get_option('github_user') ?>" /></td>
+              </tr>
+              <tr>
+               <td><label  for="github_token"><?php echo __('Github Token', 'githubget'); ?></label></td>
+               <td><input type="text" name="github_token" id="github_token_id" value="<?php echo githubget_get_option('github_token') ?>" /></td>
+              </tr>
+           </table>
+            <input type="hidden" name="cmd" value="githubget_save" />
+            <input class="button button-primary" type="submit" name="submit" value="<?php echo __('Save', 'githubget'); ?>" id="submit" />
+         </fieldset>
       </form>
     </div>
 
