@@ -157,10 +157,10 @@ function process_response_body( $body, $file_name = '', $is_repo = false ) {
                 $result = htmlspecialchars( base64_decode( $github_data['content'] ) );
             } else {
                 $status = 'ERR';
-                $result = 'Invalid repo file: ¿content? %s, <a href="https://github.com/¿user?">Repos</a>';
+                $result = 'Invalid repo file: {{content}} %s, <a href="https://github.com/{{user}}">Repos</a>';
                 $result = sprintf($result, '(' . $github_data['message'] . ')');
             }
-        } elseif (!empty($github_data['files'])) { // For file in a Gists
+        } elseif (!empty($github_data['files'])) { // For file in a Gist
             if ($file_name) {
                  // Remove simple/double quote from filename attribute
                 $file_name = str_replace(['&quot;', '&#34;', '"', '&apos;', '&#039;', "'"], '', $file_name);
@@ -169,7 +169,7 @@ function process_response_body( $body, $file_name = '', $is_repo = false ) {
                     $result = htmlspecialchars( $github_data['files'][$file_name]['content'] );
                 } else {
                     $status = 'ERR';
-                    $result = 'Invalid file name: %s, <a href="https://gist.github.com/¿user?/¿content?">Gist</a>';
+                    $result = 'Invalid file name: %s, <a href="https://gist.github.com/{{user}}/{{content}}">Gist</a>';
                     $result = sprintf($result, $file_name);
                 }
             } else {
@@ -178,7 +178,7 @@ function process_response_body( $body, $file_name = '', $is_repo = false ) {
             }
         } else {
             $status = 'ERR';
-            $result = 'Invalid Gist: ¿content? %s, <a href="https://gist.github.com/¿user?">Gists</a>';
+            $result = 'Invalid Gist: {{content}} %s, <a href="https://gist.github.com/{{user}}">Gists</a>';
             $result = sprintf($result, '('. $github_data['message'] . ')');
         }
     } else {
@@ -189,16 +189,24 @@ function process_response_body( $body, $file_name = '', $is_repo = false ) {
     return array(
         'html_url' => isset($github_data['html_url']) ? $github_data['html_url'] : '',
         'status'   => $status,
-        'content'   => $result
+        'content'   => $result,
+        'files_count' => !$is_repo && isset( $github_data['files'] ) ? count( $github_data['files'] ) : 0
     );
 }
 
 function make_the_container( $container ) {
+
+    if (empty($container)) {
+        return $container;
+    }
+
     $tags = explode('.', $container);
     $container = [];
     foreach ($tags as $tag) {
         $classes = '';
         $style = '';
+        // Parse container attribute with this format
+        // container='pre(preclass){width: 12px;}.code(php){font-size:12px;border-color:red;}'
         if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(\w+-?\s*)+\s*:\s*(\w+-?\s*)+;?)+)\s*\}/", $tag, $matches)) {
             $tag = str_replace($matches[0], '', $tag);
             if (!empty($matches[1][0])) {
@@ -223,7 +231,7 @@ function make_the_container( $container ) {
     return implode('',
         array(
             implode( '', $container['start_tags'] ),
-            '%s',
+            '{{content}}',
             implode( '', array_reverse( $container['end_tags'] ) )
         )
     );
@@ -262,18 +270,22 @@ function githubget_func( $atts, $content = '' ) {
     $github_user = empty($args['account']) ? githubget_get_option('github_user') : $args['account'];
     $is_repo = strtolower($args['repo']);
     $is_repo = '1' == $is_repo || 'true' == $is_repo ? true: false;
-    $has_ribbon = '1' == $args['ribbon'] || 'true' == $args['ribbon'] ? true: false;
+    $make_ribbon = '1' == $args['ribbon'] || 'true' == $args['ribbon'] ? true: false;
+    $make_container = !empty( $args['container'] );
     $caches_the_content = false;
+    $ribbon = '';
+    $container = '';
 
     // Content has been cached?
     $content_key = 'ghget_' . "{$github_user}_" . md5( md5( $args['filename'] ) . $content );
 
-    // Avoid to make multiple request for Gist with multiple files
+    // Avoid to do multiple request for Gist with multiple files
     $body_response_key = 'ghget_' . "{$github_user}_" . md5( $content );
     if ($body = get_transient( $body_response_key )) {
         $github_data = process_response_body( $body, $args['filename'], $is_repo );
-        $result = $github_data['content'] . '***********FROMDB************';
-        $has_ribbon = 'OK' == $github_data['status'] && $has_ribbon;
+        $result = $github_data['content'];
+        $make_ribbon = 'OK' == $github_data['status'] && $make_ribbon;
+        $make_container = 'OK' == $github_data['status'] && $make_container;
         $caches_the_content = 'OK' == $github_data['status'];
     } else {
         $github_token = githubget_get_option('github_token');
@@ -290,43 +302,67 @@ function githubget_func( $atts, $content = '' ) {
 
         // Content no modified
         if (304 == $http_code) {
-            $result =  $github_data['content'];
-            $has_ribbon = false;
-            $args['container'] = '';
+            $result = $github_data['content'];
+            $ribbon = $make_ribbon && isset( $github_data['ribbon'] ) ? $github_data['ribbon'] : '';
+            $make_ribbon = $make_ribbon && empty($ribbon);
+
+            $container = isset( $github_data['container'] ) ? $github_data['container'] : '';
+            $make_container = $make_container &&
+               isset( $github_data['container_attr'] ) &&
+                ($github_data['container_attr'] != $args['container']);
+
+                $caches_the_content = false;
             // Grab URL and pass it to the browser
         } elseif ($body = wp_remote_retrieve_body( $response )) {
             $github_data = process_response_body( $body, $args['filename'], $is_repo );
 
             $result = $github_data['content'];
-            if ('OK' == $github_data['status']) {
-                // Caches the full reponse, expires in 5 min this is useful to avoid to do the same
-                // request to GitHub API for every file in gist with multiple file
-                set_transient( $body_response_key, $body, 300 );
-                $caches_the_content = true;
-            } else {
-                $has_ribbon = false;
-                $result = str_replace(array('¿content?', '¿user?'), array($content, $github_user), $result);
+
+            if ('OK' == $github_data['status']) { // Success
+                 $caches_the_content = true;
+
+                /**
+                 * Caches the full response and avoid to do the same if there is
+                 * more than one file in a Gist. Expires in 5 min.
+                 */
+                 if (1 < $github_data['files_count']) {
+                    set_transient( $body_response_key, $body, 300 );
+                 }
+            } else { // Error
+                $make_ribbon = false;
+                $result = str_replace(array('{{content}}', '{{user}}'), array($content, $github_user), $result);
             }
         } else {
             $result = 'Content can not be get from ' . $resource . '<br/>Response status: ' . $http_code;
-            $has_ribbon = false;
+            $make_ribbon = false;
         }
     }
 
-    if (!empty($args['container'])) {
-        $result = sprintf( make_the_container( $args['container'] ), $result );
+    if ($make_container) {
+        $container = make_the_container( $args['container'] );
     }
 
-    if ($has_ribbon) {
-        $result = make_the_ribbon( $github_data['html_url'], $args['ribbontitle'] ) . $result;
+    if ($make_ribbon) {
+        $ribbon = make_the_ribbon( $github_data['html_url'], $args['ribbontitle'] );
     }
 
     if ($caches_the_content) {
         // Cache only the content for specific file
-        set_transient( $content_key, array('html_url' => $github_data['html_url'], 'content' =>  $result) );
+        set_transient( $content_key,
+            array(
+                'html_url'       => $github_data['html_url'],
+                'ribbon'         =>  $ribbon,
+                'container'      =>  $container,
+                'container_attr' =>  $args['container'],
+                'content'        =>  $result
+            )
+        );
     }
 
-    return $result;
+    return
+        empty($container) ?
+            $ribbon . $result :
+            $ribbon . str_replace('{{content}}', $result, $container);
 }
 
 add_shortcode( 'githubget', 'githubget_func' );
