@@ -277,10 +277,10 @@ function githubget_func( $atts, $content = '' ) {
     $container = '';
 
     // Content has been cached?
-    $content_key = 'ghget_' . "{$github_user}_" . md5( md5( $args['filename'] ) . $content );
+    $content_key = 'ghget_content_' . "{$github_user}_" . md5( $args['filename'] . $content );
 
     // Avoid to do multiple request for Gist with multiple files
-    $body_response_key = 'ghget_' . "{$github_user}_" . md5( $content );
+    $body_response_key = 'ghget_body_response_' . "{$github_user}_" . md5( $content );
     if ($body = get_transient( $body_response_key )) {
         $github_data = process_response_body( $body, $args['filename'], $is_repo );
         $result = $github_data['content'];
@@ -303,15 +303,20 @@ function githubget_func( $atts, $content = '' ) {
         // Content no modified
         if (304 == $http_code) {
             $result = $github_data['content'];
-            $ribbon = $make_ribbon && isset( $github_data['ribbon'] ) ? $github_data['ribbon'] : '';
-            $make_ribbon = $make_ribbon && empty($ribbon);
 
-            $container = isset( $github_data['container'] ) ? $github_data['container'] : '';
-            $make_container = $make_container &&
-               isset( $github_data['container_attr'] ) &&
-                ($github_data['container_attr'] != $args['container']);
+            if ($make_ribbon) {
+                $ribbon = $github_data['ribbon'];
+                $make_ribbon = empty($ribbon);
+            }
 
-                $caches_the_content = false;
+            if ($make_container) {
+                if ($github_data['container_attr'] == $args['container']) {
+                    $container = $github_data['container'];
+                    $make_container = false;
+                }
+            }
+
+            $caches_the_content = $make_container || $make_ribbon;
             // Grab URL and pass it to the browser
         } elseif ($body = wp_remote_retrieve_body( $response )) {
             $github_data = process_response_body( $body, $args['filename'], $is_repo );
