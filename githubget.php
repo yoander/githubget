@@ -208,6 +208,7 @@ function make_the_container( $container ) {
         // Parse container attribute with this format
         // container='pre(preclass){width: 12px;}.code(php){font-size:12px;border-color:red;}'
         if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(\w+-?\s*)+\s*:\s*(\w+-?\s*)+;?)+)\s*\}/", $tag, $matches)) {
+            dump($matches);
             $tag = str_replace($matches[0], '', $tag);
             if (!empty($matches[1][0])) {
                 $classes = sprintf(' class="%s"', $matches[1][0]);
@@ -294,7 +295,7 @@ function githubget_func( $atts, $content = '' ) {
 
         $github_data = get_transient( $content_key );
         if ( !empty( $github_data ) ) {
-            $reqargs['headers']['If-Modified-Since'] = ' ' . gmdate('D, d M Y H:i:s T');
+            $reqargs['headers']['If-Modified-Since'] = gmdate('D, d M Y H:i:s T', time() - 600);
         }
 
         $response = wp_remote_get( $resource, $reqargs );
