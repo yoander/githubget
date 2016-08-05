@@ -207,8 +207,7 @@ function make_the_container( $container ) {
         $style = '';
         // Parse container attribute with this format
         // container='pre(preclass){width: 12px;}.code(php){font-size:12px;border-color:red;}'
-        if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(\w+-?\s*)+\s*:\s*(\w+-?\s*)+;?)+)\s*\}/", $tag, $matches)) {
-            dump($matches);
+        if (preg_match_all("/\(((\w+[-_\s]?)+)\)|\{((\s*(#?\w+-?\s*)+\s*:\s*(#?\w+-?\s*)+;?)+)\s*\}/", $tag, $matches)) {
             $tag = str_replace($matches[0], '', $tag);
             if (!empty($matches[1][0])) {
                 $classes = sprintf(' class="%s"', $matches[1][0]);
@@ -220,6 +219,8 @@ function make_the_container( $container ) {
 
             if (!empty($matches[3][0])) {
                 $style = sprintf(' style="%s"', $matches[3][0]);
+            } elseif (!empty($matches[3][1])) {
+                $style = sprintf(' style="%s"', $matches[3][1]);
             } else {
                 $style = '';
             }
