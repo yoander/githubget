@@ -145,7 +145,7 @@ function get_resource( $user, $content, $is_repo = false) {
  * @param  boolean $is_repo [description]
  * @return array           [description]
  */
-function process_response_body( $body, $file_name = '', $is_repo = false ) {
+function process_response_body( $body, $file_name = '', $is_repo = false, $html_enc = true ) {
     // Convert JSON to array
     $github_data = json_decode( $body, true );
     // No error decoding JSON?
@@ -154,7 +154,7 @@ function process_response_body( $body, $file_name = '', $is_repo = false ) {
         if ($is_repo) {
             if (isset($github_data['content'])) {
                 $status = 'OK';
-                $result = htmlspecialchars( base64_decode( $github_data['content'] ) );
+                $result = base64_decode( $github_data['content'] );
             } else {
                 $status = 'ERR';
                 $result = 'Invalid repo file: {{content}} %s, <a href="https://github.com/{{user}}">Repos</a>';
@@ -166,7 +166,7 @@ function process_response_body( $body, $file_name = '', $is_repo = false ) {
                 $file_name = str_replace(['&quot;', '&#34;', '"', '&apos;', '&#039;', "'"], '', $file_name);
                 if (isset($github_data['files'][$file_name])) {
                     $status = 'OK';
-                    $result = htmlspecialchars( $github_data['files'][$file_name]['content'] );
+                    $result = $github_data['files'][$file_name]['content'];
                 } else {
                     $status = 'ERR';
                     $result = 'Invalid file name: %s, <a href="https://gist.github.com/{{user}}/{{content}}">Gist</a>';
@@ -174,7 +174,7 @@ function process_response_body( $body, $file_name = '', $is_repo = false ) {
                 }
             } else {
                 $status = 'OK';
-                $result = htmlspecialchars( reset( $github_data['files'] )['content'] );
+                $result = reset( $github_data['files'] )['content'];
             }
         } else {
             $status = 'ERR';
@@ -189,7 +189,7 @@ function process_response_body( $body, $file_name = '', $is_repo = false ) {
     return array(
         'html_url' => isset($github_data['html_url']) ? $github_data['html_url'] : '',
         'status'   => $status,
-        'content'   => $result,
+        'content'  => ($status == 'OK') && $html_enc ? htmlspecialchars($result) : $result,
         'files_count' => !$is_repo && isset( $github_data['files'] ) ? count( $github_data['files'] ) : 0
     );
 }
@@ -267,16 +267,19 @@ function githubget_func( $atts, $content = '' ) {
         'ribbontitle'  => '',
         'container'    => '',
         'account'      => '',
+        'htmlenc'      => true,
     ), $atts);
 
     $github_user = empty($args['account']) ? githubget_get_option('github_user') : $args['account'];
     $is_repo = strtolower($args['repo']);
     $is_repo = '1' == $is_repo || 'true' == $is_repo ? true: false;
     $make_ribbon = '1' == $args['ribbon'] || 'true' == $args['ribbon'] ? true: false;
+    $htmlenc = 'true' ==  $args['htmlenc'] ? true : false;
     $make_container = !empty( $args['container'] );
     $caches_the_content = false;
     $ribbon = '';
     $container = '';
+
 
     // Content has been cached?
     $content_key = 'ghget_content_' . "{$github_user}_" . md5( $args['filename'] . $content );
@@ -284,7 +287,7 @@ function githubget_func( $atts, $content = '' ) {
     // Avoid to do multiple request for Gist with multiple files
     $body_response_key = 'ghget_body_response_' . "{$github_user}_" . md5( $content );
     if ($body = get_transient( $body_response_key )) {
-        $github_data = process_response_body( $body, $args['filename'], $is_repo );
+        $github_data = process_response_body( $body, $args['filename'], $is_repo, $htmlenc );
         $result = $github_data['content'];
         $make_ribbon = 'OK' == $github_data['status'] && $make_ribbon;
         $make_container = 'OK' == $github_data['status'] && $make_container;
@@ -321,7 +324,7 @@ function githubget_func( $atts, $content = '' ) {
             $caches_the_content = $make_container || $make_ribbon;
             // Grab URL and pass it to the browser
         } elseif ($body = wp_remote_retrieve_body( $response )) {
-            $github_data = process_response_body( $body, $args['filename'], $is_repo );
+            $github_data = process_response_body( $body, $args['filename'], $is_repo, $htmlenc );
 
             $result = $github_data['content'];
 
