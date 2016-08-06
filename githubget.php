@@ -299,7 +299,8 @@ function githubget_func( $atts, $content = '' ) {
 
         $github_data = get_transient( $content_key );
         if ( !empty( $github_data ) ) {
-            $reqargs['headers']['If-Modified-Since'] = gmdate('D, d M Y H:i:s T', time() - 600);
+            $github_data = json_decode( $github_data, true );
+            $reqargs['headers']['If-Modified-Since'] = gmdate('D, d M Y H:i:s T', $github_data['modified_at']);
         }
 
         $response = wp_remote_get( $resource, $reqargs );
@@ -359,12 +360,15 @@ function githubget_func( $atts, $content = '' ) {
     if ($caches_the_content) {
         // Cache only the content for specific file
         set_transient( $content_key,
-            array(
-                'html_url'       => $github_data['html_url'],
-                'ribbon'         =>  $ribbon,
-                'container'      =>  $container,
-                'container_attr' =>  $args['container'],
-                'content'        =>  $result
+            json_encode(
+                array(
+                    'html_url'       => $github_data['html_url'],
+                    'ribbon'         => $ribbon,
+                    'container'      => $container,
+                    'container_attr' => $args['container'],
+                    'content'        => $result,
+                    'modified_at'    => time()
+                )
             )
         );
     }
